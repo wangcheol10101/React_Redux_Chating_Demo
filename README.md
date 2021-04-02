@@ -1,68 +1,128 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app), using the [Redux](https://redux.js.org/) and [Redux Toolkit](https://redux-toolkit.js.org/) template.
+### React + Redux + firestore 간단체팅기능 demo
 
-## Available Scripts
+[app link](web-quickstart-134f5.web.app)
 
-In the project directory, you can run:
+#### 기능
 
-### `yarn start`
+1. google 로그인
+2. 체팅방 만들고 체팅하기
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+#### Memo
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+1. **redux store**
 
-### `yarn test`
+   reducer: user(로그인 유저), chat(현제 체팅방 정보)
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+2. **redux + firebase auth(provider) 로그인**
 
-### `yarn build`
+   firebase.js: firebase 연결 초기화
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+   ```javascript
+   import firebase from 'firebase';
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+   // firebase config
+   const firebaseConfig = {};
+   const firebaseApp = firebase.initializeApp(firebaseConfig);
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+   const db = firebaseApp.firestore();
+   const auth = firebase.auth();
+   // google login provider
+   const provider = new firebase.auth.GoogleAuthProvider();
 
-### `yarn eject`
+   export { auth, provider };
+   export default db;
+   ```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+   login.js: google login provider로 로그인
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+   ```javascript
+   // login
+   const signin = () => {
+     auth.signInWithPopup(provider).catch((err) => alert(err.message));
+   };
+   // logout
+   const signour = () => auth.signOut();
+   ```
 
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+   app.js firebase auth가 제공하는 함수로 로그인 상태 감시하고 따라서 store user reducer 상태를 dispatch하고 상태를 따라서 다른 화면을 보여줌
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+   ```javascript
+   auth.onAuthStateChanged((authUser) => {
+     if (authUser) {
+       // user is logged in
+       // createSlice에서 export한 "action" 함수를 dispatch
+       // "action" 함수에 전달한 object가 store reducer action.payload속성에 들어감
+       dispatch(
+         login({
+           uid: authUser.uid,
+           photo: authUser.photoURL,
+           email: authUser.email,
+           displayName: authUser.displayName,
+         })
+       );
+     } else {
+       // user is logged out
+       dispatch(logout());
+     }
+   });
+   ```
 
-## Learn More
+   ```html
+   <!-- user state 따라 다른 화면을 보여줌 -->
+   <div className="App">{user ? <Imessage /> : <Login />}</div>
+   ```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+3. **firestore 구조**
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+   chats(collection) -> doc({chatName: ""})
 
-### Code Splitting
+   ​ -> messages(collection) -> doc({timestamp: "", message: "", uid: "", email: "", photo: "", displayName: ""})
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
+#### process
 
-### Analyzing the Bundle Size
+1. **redux project setup**
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
+   ```shell
+   npx create-react-app my-app-name --template redux
+   ```
 
-### Making a Progressive Web App
+2. 필요한 library 설치
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
+   material UI
 
-### Advanced Configuration
+   ```shell
+   npm install @material-ui/core
+   npm install @material-ui/icons
+   ```
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
+   firebase 연결
 
-### Deployment
+   ```shell
+   npm install firebase
+   ```
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
+3. firebase hosting로 deploy
 
-### `yarn build` fails to minify
+   ```shell
+   firebase login
+   firebase init
+   ```
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+   hosting 선택 >> use an existing project >> project 선택 >> public directory: build로 설정
+
+   ```shell
+   npm run build
+   firebase deploy
+   ```
+
+#### 기타
+
+1. **날짜 표현 library**
+
+   [timeage](https://github.com/hustcc/timeago.js#readme)
+
+   [moment](https://momentjs.com/)
+
+2. **animating a list of items when the list's order changes**
+
+   [react flip move](https://github.com/joshwcomeau/react-flip-move)
