@@ -1,6 +1,6 @@
 ### React + Redux + firestore 간단체팅기능 demo
 
-[app link](web-quickstart-134f5.web.app)
+[app link](https://web-quickstart-134f5.web.app)
 
 #### 기능
 
